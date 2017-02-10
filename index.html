@@ -1,0 +1,55 @@
+<html>
+	<head>
+		
+		<script src="js/polyfill.js"></script>
+		<script src="js/trezor-5.9.9.js"></script>
+	</head>
+	<body>
+	<script type="text/javascript">
+var trezor = window.trezor;
+var list = new trezor.DeviceList();
+list.on('connect', function (device) {
+	device.on('pin', function(type, callback){
+		console.log(type)
+	})
+	device.run(function callback(session) {
+		return session.getHDNode(
+[0],
+{
+    messagePrefix: '\x19Litecoin Signed Message:\n',
+        bip32: {
+	      public: 0x019da462,
+	            private: 0x019d9cfe
+		        },
+			    pubKeyHash: 0x30,
+			        scriptHash: 0x05,
+				    wif: 0xb0,
+				        dustThreshold: 0 // https://github.com/litecoin-project/litecoin/blob/v0.8.7.2/src/main.cpp#L360-L365
+}
+		);
+	});
+});
+
+// Note that this is a bit duplicate to device.on('disconnect')
+list.on('disconnect', function (device) {
+	console.log('Disconnected a device:', device);
+	console.log('Devices:', list.asArray());
+});
+
+// This gets called on general error of the devicelist (no transport, etc)
+list.on('error', function (error) {
+	console.error('List error:', error);
+});
+
+// On connecting unacquired device
+list.on('connectUnacquired', function (device) {
+	askUserForceAcquire(function() {
+		device.steal().then(function() {
+			console.log("steal done. now wait for another connect");
+		});
+	});
+});
+	</script>
+	</body>
+</html>
+
